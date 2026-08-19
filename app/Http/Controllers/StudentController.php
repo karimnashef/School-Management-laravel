@@ -34,7 +34,7 @@ class StudentController extends Controller
     public function show(Student $student): JsonResponse
     {
         return ApiResponse::success(
-            new StudentResource($student->load(['user', 'SchoolClass.gradeLevel', 'gradeLevel', 'academicYear']))
+            new StudentResource($student->load(['user', 'schoolClass.gradeLevel', 'gradeLevel', 'academicYear']))
         );
     }
 

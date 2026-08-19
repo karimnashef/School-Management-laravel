@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('teachers', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->foreignUuid('user_id')->constrained('users')->cascadeOnDelete();
-            $table->foreignUuid('department_id')->constrained('departments')->cascadeOnDelete();
+            $table->foreignUuid('department_id')->constrained('departments')->restrictOnDelete();
 
             $table->string('qualification')->nullable();
             $table->date('join_date');

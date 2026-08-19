@@ -7,7 +7,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Attendance extends Model
 {
@@ -34,8 +33,8 @@ class Attendance extends Model
         return $this->belongsTo(Student::class);
     }
 
-    public function shift(): HasMany
+    public function shift(): BelongsTo
     {
-        return $this->hasMany(TeacherShift::class, 'shift_id');
+        return $this->belongsTo(TeacherShift::class, 'shift_id');
     }
 }

@@ -17,6 +17,7 @@ class Grade extends Model
     public $incrementing = false;
 
     protected $fillable = [
+        'student_id',
         'name',
         'grade',
         'result',
@@ -25,6 +26,11 @@ class Grade extends Model
         'academic_year_id',
         'grade_level_id'
     ];
+
+    public function student(): BelongsTo
+    {
+        return $this->belongsTo(Student::class);
+    }
 
     public function classes(): HasMany
     {

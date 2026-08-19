@@ -11,16 +11,16 @@ return new class extends Migration
         Schema::create('students', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->foreignUuid('user_id')->constrained('users')->cascadeOnDelete();
-            $table->foreignUuid('class_id')->constrained('classes')->cascadeOnDelete();
-            $table->foreignUuid('grade_level_id')->constrained('grades')->cascadeOnDelete();
-            $table->foreignUuid('academic_year_id')->constrained('academic_years')->cascadeOnDelete();
-
+            $table->foreignUuid('class_id')->constrained('school_classes')->restrictOnDelete();
+            $table->foreignUuid('grade_level_id')->constrained('grade_levels')->restrictOnDelete();
+            $table->foreignUuid('academic_year_id')->constrained('academic_years')->restrictOnDelete();
             $table->integer('age')->nullable();
             $table->date('admission_date');
             $table->string('blood_group')->nullable();
-
             $table->timestamps();
             $table->softDeletes();
+
+            $table->index(['class_id', 'academic_year_id']);
         });
     }
 

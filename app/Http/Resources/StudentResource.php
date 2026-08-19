@@ -19,7 +19,7 @@ class StudentResource extends JsonResource
             'age' => $this->age,
             'blood_group' => $this->blood_group,
             'user' => $this->whenLoaded('user', fn () => new UserResource($this->user)),
-            'class' => $this->whenLoaded('SchoolClass', fn () => new SchoolClassResource($this->SchoolClass)),
+            'class' => $this->whenLoaded('schoolClass', fn () => new SchoolClassResource($this->schoolClass)),
             'grade_level' => $this->whenLoaded('gradeLevel', fn () => new GradeLevelResource($this->gradeLevel)),
             'academic_year' => $this->whenLoaded('academicYear', fn () => new AcademicYearResource($this->academicYear)),
             'created_at' => $this->created_at?->toDateTimeString(),

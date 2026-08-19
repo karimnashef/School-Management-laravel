@@ -35,7 +35,7 @@ class Student extends Model
         return $this->belongsTo(GradeLevel::class);
     }
 
-    public function SchoolClass(): BelongsTo
+    public function schoolClass(): BelongsTo
     {
         return $this->belongsTo(SchoolClass::class, 'class_id');
     }

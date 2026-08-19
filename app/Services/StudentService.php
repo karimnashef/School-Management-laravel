@@ -12,7 +12,7 @@ class StudentService
     public function paginate(int $perPage = 15): LengthAwarePaginator
     {
         return Student::query()
-            ->with(['user', 'SchoolClass.gradeLevel', 'gradeLevel', 'academicYear'])
+            ->with(['user', 'schoolClass.gradeLevel', 'gradeLevel', 'academicYear'])
             ->latest()
             ->paginate($perPage);
     }

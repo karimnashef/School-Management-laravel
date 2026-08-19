@@ -11,8 +11,8 @@ return new class extends Migration
         Schema::create('grades', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->foreignUuid('student_id')->constrained('students')->cascadeOnDelete();
-            $table->foreignUuid('academic_year_id')->constrained('academic_years')->cascadeOnDelete();
-            $table->foreignUuid('grade_level_id')->constrained('grade_levels')->cascadeOnDelete();
+            $table->foreignUuid('academic_year_id')->constrained('academic_years')->restrictOnDelete();
+            $table->foreignUuid('grade_level_id')->constrained('grade_levels')->restrictOnDelete();
             $table->string('name');
             $table->integer('grade');
             $table->string('result')->nullable();

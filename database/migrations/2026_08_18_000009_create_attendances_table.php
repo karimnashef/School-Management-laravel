@@ -15,7 +15,12 @@ return new class extends Migration
             $table->foreignUuid('shift_id')->constrained('teacher_shifts')->cascadeOnDelete();
 
             $table->date('attendance_date');
-            $table->string('status')->default(AttendanceStatusEnum::PRESENT->value)->index();
+            $table->enum('status', [
+                AttendanceStatusEnum::PRESENT->value,
+                AttendanceStatusEnum::ABSENT->value,
+                AttendanceStatusEnum::LATE->value,
+                AttendanceStatusEnum::EXCUSED->value,
+            ])->default(AttendanceStatusEnum::PRESENT->value)->index();
             $table->text('notes')->nullable();
 
             $table->timestamps();
