@@ -1,5 +1,5 @@
 import { getList } from './api';
-import type { AcademicYear, Department, Exam, GradeLevel, SchoolClass, Student, Teacher, User } from './types';
+import type { AcademicYear, Department, Exam, GradeLevel, SchoolClass, Student, Teacher, TeacherShift, User } from './types';
 
 export async function loadUsers(role?: string): Promise<User[]> {
   const res = await getList<User>('/users', { per_page: 100 });
@@ -39,5 +39,10 @@ export async function loadTeachers(): Promise<Teacher[]> {
 
 export async function loadExams(): Promise<Exam[]> {
   const res = await getList<Exam>('/exams', { per_page: 100 });
+  return res.data;
+}
+
+export async function loadShifts(): Promise<TeacherShift[]> {
+  const res = await getList<TeacherShift>('/teacher-shifts', { per_page: 100 });
   return res.data;
 }

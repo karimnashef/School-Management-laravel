@@ -17,7 +17,7 @@ const nav: NavItem[] = [
   { to: '/academic-years', label: 'Academic Years', roles: ['admin'] },
   { to: '/departments', label: 'Departments', roles: ['admin'] },
   { to: '/grades', label: 'Grades', roles: ['admin', 'teacher'] },
-  { to: '/shifts', label: 'Teacher Shifts', roles: ['admin', 'teacher'] },
+  { to: '/shifts', label: 'Schedule', roles: ['admin', 'teacher'] },
   { to: '/attendance', label: 'Attendance', roles: ['admin', 'teacher'] },
   { to: '/exams', label: 'Exams', roles: ['admin', 'teacher'] },
   { to: '/exam-results', label: 'Exam Results', roles: ['admin', 'teacher'] },
@@ -45,7 +45,7 @@ export default function Layout() {
       <aside className="sidebar">
         <div className="brand">
           <span className="brand-mark">S</span>
-          <span className="brand-text">SchoolMS</span>
+          <span className="brand-text">Madraste</span>
         </div>
         <nav className="nav">
           {items.map((item) => (

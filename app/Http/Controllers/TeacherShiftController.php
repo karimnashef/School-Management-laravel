@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\ApiResponse;
+use App\Http\Requests\TeacherShift\GenerateTeacherShiftsRequest;
 use App\Http\Requests\TeacherShift\StoreTeacherShiftRequest;
 use App\Http\Requests\TeacherShift\UpdateTeacherShiftRequest;
 use App\Http\Resources\TeacherShiftResource;
@@ -20,8 +21,25 @@ class TeacherShiftController extends Controller
         $this->authorize('viewAny', TeacherShift::class);
 
         return ApiResponse::paginated(
-            $this->service->paginate((int) $request->query('per_page', 15)),
+            $this->service->paginate(
+                (int) $request->query('per_page', 15),
+                $request->query('from_date'),
+                $request->query('to_date'),
+                $request->query('teacher_id'),
+                $request->query('class_id')
+            ),
             TeacherShiftResource::class
+        );
+    }
+
+    public function generate(GenerateTeacherShiftsRequest $request): JsonResponse
+    {
+        $this->authorize('create', TeacherShift::class);
+
+        return ApiResponse::success(
+            TeacherShiftResource::collection($this->service->generate($request->validated())),
+            'Schedule generated successfully',
+            201
         );
     }
 

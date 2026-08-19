@@ -48,6 +48,7 @@ Route::prefix('v1')->group(function () {
 
         Route::apiResource('departments', DepartmentController::class);
 
+        Route::post('teacher-shifts/generate', [TeacherShiftController::class, 'generate'])->middleware('throttle:bulk');
         Route::apiResource('teacher-shifts', TeacherShiftController::class);
 
         Route::apiResource('exams', ExamController::class);

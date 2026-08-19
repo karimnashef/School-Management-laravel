@@ -32,7 +32,7 @@ Request
 
 LAYERS:
 
-  Routes          routes/api.php             71 routes under /api/v1
+  Routes          routes/api.php             72 routes under /api/v1
   Controllers     app/Http/Controllers       15 controllers (Auth, User,
                                               Student, Teacher, SchoolClass,
                                               Grade, GradeLevel, AcademicYear,
@@ -170,6 +170,14 @@ RESPONSE ENVELOPE (every endpoint):
 --------------------------------------------------------------------------------
   CRUD. Schedule a teacher for a class on a date/time; substitute support
   (switch_to_id).
+  POST /api/v1/teacher-shifts/generate - auto-schedule generator: date range
+  (max 62 days), start/end time, class multi-select, optional teacher pool,
+  working days of week (default Mon-Fri), replace_existing flag. Constraint
+  engine: one shift per teacher per day, no overlapping slots, weekly cap
+  (required_shifts_per_week), workload balancing (teacher with fewest shifts
+  picked first). Runs in a single transaction - any failure rolls back fully.
+  Index supports from_date/to_date/teacher_id/class_id filters for calendar
+  views.
   BUSINESS RULE: conflict detection - overlapping shifts for the same teacher
   are rejected (e.g. 08:00-09:00 vs 08:30-09:30 -> 422).
 
@@ -244,7 +252,7 @@ RESPONSE ENVELOPE (every endpoint):
 --------------------------------------------------------------------------------
  3.15 CROSS-CUTTING (EVERYWHERE)
 --------------------------------------------------------------------------------
-  - 71 routes, all authenticated except login/register
+  - 72 routes, all authenticated except login/register
   - Consistent response envelope + standardized errors (401/403/404/422)
   - Pagination on all index endpoints (?per_page=, meta block with totals)
   - Nested relations in responses (student -> user/class/grade level/...)

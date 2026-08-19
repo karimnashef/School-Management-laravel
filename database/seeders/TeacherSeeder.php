@@ -31,7 +31,7 @@ class TeacherSeeder extends Seeder
                 'email' => 'mona.ibrahim@school.test',
                 'department_id' => $science->id,
                 'qualification' => 'BSc Science',
-                'required_shifts_per_week' => 4,
+                'required_shifts_per_week' => 5,
                 'price_per_shift' => 140.00,
             ],
             [
@@ -40,7 +40,7 @@ class TeacherSeeder extends Seeder
                 'email' => 'sara.khaled@school.test',
                 'department_id' => $languages->id,
                 'qualification' => 'BA English Literature',
-                'required_shifts_per_week' => 4,
+                'required_shifts_per_week' => 5,
                 'price_per_shift' => 130.00,
             ],
         ];
