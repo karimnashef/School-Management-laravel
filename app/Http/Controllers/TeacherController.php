@@ -17,13 +17,18 @@ class TeacherController extends Controller
 
     public function index(Request $request): JsonResponse
     {
+        $this->authorize('viewAny', Teacher::class);
+
         return ApiResponse::paginated(
-            $this->service->paginate((int) $request->query('per_page', 15))
+            $this->service->paginate((int) $request->query('per_page', 15)),
+            TeacherResource::class
         );
     }
 
     public function store(StoreTeacherRequest $request): JsonResponse
     {
+        $this->authorize('create', Teacher::class);
+
         return ApiResponse::success(
             new TeacherResource($this->service->create($request->validated())),
             'Teacher created successfully',
@@ -33,6 +38,8 @@ class TeacherController extends Controller
 
     public function show(Teacher $teacher): JsonResponse
     {
+        $this->authorize('view', $teacher);
+
         return ApiResponse::success(
             new TeacherResource($teacher->load(['user', 'department']))
         );
@@ -40,6 +47,8 @@ class TeacherController extends Controller
 
     public function update(UpdateTeacherRequest $request, Teacher $teacher): JsonResponse
     {
+        $this->authorize('update', $teacher);
+
         return ApiResponse::success(
             new TeacherResource($this->service->update($teacher, $request->validated())),
             'Teacher updated successfully'
@@ -48,6 +57,8 @@ class TeacherController extends Controller
 
     public function destroy(Teacher $teacher): JsonResponse
     {
+        $this->authorize('delete', $teacher);
+
         $this->service->delete($teacher);
 
         return ApiResponse::success(null, 'Teacher deleted successfully');

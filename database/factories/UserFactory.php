@@ -18,7 +18,7 @@ class UserFactory extends Factory
             'last_name' => fake()->lastName(),
             'email' => fake()->unique()->safeEmail(),
             'phone' => fake()->phoneNumber(),
-            'hashed_password' => 'password',
+            'password' => 'password',
             'address' => fake()->optional()->address(),
             'role' => UserRoleEnum::STUDENT,
             'status' => 'active',

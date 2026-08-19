@@ -18,13 +18,18 @@ class AttendanceController extends Controller
 
     public function index(Request $request): JsonResponse
     {
+        $this->authorize('viewAny', Attendance::class);
+
         return ApiResponse::paginated(
-            $this->service->paginate((int) $request->query('per_page', 15))
+            $this->service->paginate((int) $request->query('per_page', 15)),
+            AttendanceResource::class
         );
     }
 
     public function store(StoreAttendanceRequest $request): JsonResponse
     {
+        $this->authorize('create', Attendance::class);
+
         return ApiResponse::success(
             new AttendanceResource($this->service->create($request->validated())),
             'Attendance recorded successfully',
@@ -34,6 +39,8 @@ class AttendanceController extends Controller
 
     public function bulkStore(BulkStoreAttendanceRequest $request): JsonResponse
     {
+        $this->authorize('create', Attendance::class);
+
         $records = $this->service->bulkCreate($request->validated());
 
         return ApiResponse::success(
@@ -45,6 +52,8 @@ class AttendanceController extends Controller
 
     public function show(Attendance $attendance): JsonResponse
     {
+        $this->authorize('view', $attendance);
+
         return ApiResponse::success(
             new AttendanceResource($attendance->load(['student.user', 'shift.class', 'shift.teacher.user']))
         );
@@ -52,6 +61,8 @@ class AttendanceController extends Controller
 
     public function update(UpdateAttendanceRequest $request, Attendance $attendance): JsonResponse
     {
+        $this->authorize('update', $attendance);
+
         return ApiResponse::success(
             new AttendanceResource($this->service->update($attendance, $request->validated())),
             'Attendance updated successfully'
@@ -60,6 +71,8 @@ class AttendanceController extends Controller
 
     public function destroy(Attendance $attendance): JsonResponse
     {
+        $this->authorize('delete', $attendance);
+
         $this->service->delete($attendance);
 
         return ApiResponse::success(null, 'Attendance deleted successfully');

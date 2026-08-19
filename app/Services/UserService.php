@@ -19,8 +19,7 @@ class UserService
      */
     public function create(array $data): User
     {
-        $data['hashed_password'] = $data['password'];
-        unset($data['password'], $data['password_confirmation']);
+        unset($data['password_confirmation']);
 
         return User::create($data);
     }
@@ -30,10 +29,7 @@ class UserService
      */
     public function update(User $user, array $data): User
     {
-        if (isset($data['password'])) {
-            $data['hashed_password'] = $data['password'];
-            unset($data['password'], $data['password_confirmation']);
-        }
+        unset($data['password_confirmation']);
 
         $user->update($data);
 

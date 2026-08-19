@@ -17,13 +17,18 @@ class DepartmentController extends Controller
 
     public function index(Request $request): JsonResponse
     {
+        $this->authorize('viewAny', Department::class);
+
         return ApiResponse::paginated(
-            $this->service->paginate((int) $request->query('per_page', 15))
+            $this->service->paginate((int) $request->query('per_page', 15)),
+            DepartmentResource::class
         );
     }
 
     public function store(StoreDepartmentRequest $request): JsonResponse
     {
+        $this->authorize('create', Department::class);
+
         return ApiResponse::success(
             new DepartmentResource($this->service->create($request->validated())),
             'Department created successfully',
@@ -33,11 +38,15 @@ class DepartmentController extends Controller
 
     public function show(Department $department): JsonResponse
     {
+        $this->authorize('view', $department);
+
         return ApiResponse::success(new DepartmentResource($department->loadCount(['teachers', 'grades'])));
     }
 
     public function update(UpdateDepartmentRequest $request, Department $department): JsonResponse
     {
+        $this->authorize('update', $department);
+
         return ApiResponse::success(
             new DepartmentResource($this->service->update($department, $request->validated())),
             'Department updated successfully'
@@ -46,6 +55,8 @@ class DepartmentController extends Controller
 
     public function destroy(Department $department): JsonResponse
     {
+        $this->authorize('delete', $department);
+
         $this->service->delete($department);
 
         return ApiResponse::success(null, 'Department deleted successfully');

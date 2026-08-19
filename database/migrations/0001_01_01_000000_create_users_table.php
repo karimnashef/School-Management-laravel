@@ -14,7 +14,7 @@ return new class extends Migration
             $table->string('last_name');
             $table->string('email')->unique();
             $table->string('phone');
-            $table->string('hashed_password');
+            $table->string('password');
             $table->string('address')->nullable();
             $table->enum('role' , ['student', 'teacher', 'admin'])->default('student')->index();
             $table->string('status')->default('active')->index();

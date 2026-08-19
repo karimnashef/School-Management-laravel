@@ -17,13 +17,18 @@ class TeacherShiftController extends Controller
 
     public function index(Request $request): JsonResponse
     {
+        $this->authorize('viewAny', TeacherShift::class);
+
         return ApiResponse::paginated(
-            $this->service->paginate((int) $request->query('per_page', 15))
+            $this->service->paginate((int) $request->query('per_page', 15)),
+            TeacherShiftResource::class
         );
     }
 
     public function store(StoreTeacherShiftRequest $request): JsonResponse
     {
+        $this->authorize('create', TeacherShift::class);
+
         return ApiResponse::success(
             new TeacherShiftResource($this->service->create($request->validated())),
             'Teacher shift created successfully',
@@ -33,6 +38,8 @@ class TeacherShiftController extends Controller
 
     public function show(TeacherShift $shift): JsonResponse
     {
+        $this->authorize('view', $shift);
+
         return ApiResponse::success(
             new TeacherShiftResource($shift->load(['teacher.user', 'class.gradeLevel', 'switchTo.user']))
         );
@@ -40,6 +47,8 @@ class TeacherShiftController extends Controller
 
     public function update(UpdateTeacherShiftRequest $request, TeacherShift $shift): JsonResponse
     {
+        $this->authorize('update', $shift);
+
         return ApiResponse::success(
             new TeacherShiftResource($this->service->update($shift, $request->validated())),
             'Teacher shift updated successfully'
@@ -48,6 +57,8 @@ class TeacherShiftController extends Controller
 
     public function destroy(TeacherShift $shift): JsonResponse
     {
+        $this->authorize('delete', $shift);
+
         $this->service->delete($shift);
 
         return ApiResponse::success(null, 'Teacher shift deleted successfully');

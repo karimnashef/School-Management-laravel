@@ -20,10 +20,15 @@ class ApiResponse
     }
 
     /**
+     * @param  class-string<\Illuminate\Http\Resources\Json\JsonResource>|null  $resourceClass
      * @param  mixed  $data
      */
-    public static function paginated(LengthAwarePaginator $paginator, string $message = 'ok'): JsonResponse
+    public static function paginated(LengthAwarePaginator $paginator, ?string $resourceClass = null, string $message = 'ok'): JsonResponse
     {
+        if ($resourceClass !== null) {
+            $paginator->setCollection($resourceClass::collection($paginator->items())->collection);
+        }
+
         return response()->json([
             'success' => true,
             'message' => $message,

@@ -17,13 +17,18 @@ class SchoolClassController extends Controller
 
     public function index(Request $request): JsonResponse
     {
+        $this->authorize('viewAny', SchoolClass::class);
+
         return ApiResponse::paginated(
-            $this->service->paginate((int) $request->query('per_page', 15))
+            $this->service->paginate((int) $request->query('per_page', 15)),
+            SchoolClassResource::class
         );
     }
 
     public function store(StoreSchoolClassRequest $request): JsonResponse
     {
+        $this->authorize('create', SchoolClass::class);
+
         return ApiResponse::success(
             new SchoolClassResource($this->service->create($request->validated())),
             'Class created successfully',
@@ -33,6 +38,8 @@ class SchoolClassController extends Controller
 
     public function show(SchoolClass $class): JsonResponse
     {
+        $this->authorize('view', $class);
+
         return ApiResponse::success(
             new SchoolClassResource($class->load(['gradeLevel', 'academicYear'])->loadCount('students'))
         );
@@ -40,6 +47,8 @@ class SchoolClassController extends Controller
 
     public function update(UpdateSchoolClassRequest $request, SchoolClass $class): JsonResponse
     {
+        $this->authorize('update', $class);
+
         return ApiResponse::success(
             new SchoolClassResource($this->service->update($class, $request->validated())),
             'Class updated successfully'
@@ -48,6 +57,8 @@ class SchoolClassController extends Controller
 
     public function destroy(SchoolClass $class): JsonResponse
     {
+        $this->authorize('delete', $class);
+
         $this->service->delete($class);
 
         return ApiResponse::success(null, 'Class deleted successfully');

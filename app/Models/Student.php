@@ -25,6 +25,10 @@ class Student extends Model
         'blood_group'
     ];
 
+    protected $casts = [
+        'admission_date' => 'date',
+    ];
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

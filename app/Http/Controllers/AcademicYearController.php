@@ -17,13 +17,18 @@ class AcademicYearController extends Controller
 
     public function index(Request $request): JsonResponse
     {
+        $this->authorize('viewAny', AcademicYear::class);
+
         return ApiResponse::paginated(
-            $this->service->paginate((int) $request->query('per_page', 15))
+            $this->service->paginate((int) $request->query('per_page', 15)),
+            AcademicYearResource::class
         );
     }
 
     public function store(StoreAcademicYearRequest $request): JsonResponse
     {
+        $this->authorize('create', AcademicYear::class);
+
         return ApiResponse::success(
             new AcademicYearResource($this->service->create($request->validated())),
             'Academic year created successfully',
@@ -33,11 +38,15 @@ class AcademicYearController extends Controller
 
     public function show(AcademicYear $academicYear): JsonResponse
     {
+        $this->authorize('view', $academicYear);
+
         return ApiResponse::success(new AcademicYearResource($academicYear));
     }
 
     public function update(UpdateAcademicYearRequest $request, AcademicYear $academicYear): JsonResponse
     {
+        $this->authorize('update', $academicYear);
+
         return ApiResponse::success(
             new AcademicYearResource($this->service->update($academicYear, $request->validated())),
             'Academic year updated successfully'
@@ -46,6 +55,8 @@ class AcademicYearController extends Controller
 
     public function destroy(AcademicYear $academicYear): JsonResponse
     {
+        $this->authorize('delete', $academicYear);
+
         $this->service->delete($academicYear);
 
         return ApiResponse::success(null, 'Academic year deleted successfully');
@@ -53,6 +64,8 @@ class AcademicYearController extends Controller
 
     public function setCurrent(AcademicYear $academicYear): JsonResponse
     {
+        $this->authorize('setCurrent', $academicYear);
+
         return ApiResponse::success(
             new AcademicYearResource($this->service->setCurrent($academicYear)),
             'Academic year set as current successfully'

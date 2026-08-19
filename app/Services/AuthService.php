@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\UserRoleEnum;
 use App\Exceptions\DomainException;
 use App\Models\User;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 
 class AuthService
@@ -15,15 +16,28 @@ class AuthService
      */
     public function login(array $credentials): array
     {
-        $user = User::where('email', $credentials['email'])->first();
+        $email = strtolower($credentials['email']);
+        $lockoutKey = 'auth.lockout:' . $email;
 
-        if ($user === null || ! Hash::check($credentials['password'], $user->hashed_password)) {
+        if ($this->isLockedOut($lockoutKey)) {
+            $minutes = config('security.login.lockout_minutes', 15);
+
+            throw new DomainException("Too many failed attempts. Try again in {$minutes} minutes.", 429);
+        }
+
+        $user = User::where('email', $email)->first();
+
+        if ($user === null || ! Hash::check($credentials['password'], $user->password)) {
+            $this->registerFailedAttempt($lockoutKey);
+
             throw new DomainException('Invalid credentials.', 401);
         }
 
         if ($user->status !== 'active') {
             throw new DomainException('This account is not active.', 403);
         }
+
+        Cache::forget($lockoutKey);
 
         $token = $user->createToken('api')->plainTextToken;
 
@@ -35,9 +49,6 @@ class AuthService
      */
     public function register(array $data): User
     {
-        $data['hashed_password'] = $data['password'];
-        unset($data['password'], $data['password_confirmation']);
-
         $data['role'] = $data['role'] ?? UserRoleEnum::STUDENT;
         $data['status'] = $data['status'] ?? 'active';
 
@@ -53,5 +64,21 @@ class AuthService
         }
 
         $user->currentAccessToken()?->delete();
+    }
+
+    private function isLockedOut(string $key): bool
+    {
+        $attempts = (int) Cache::get($key, 0);
+        $maxAttempts = config('security.login.max_attempts', 5);
+
+        return $attempts >= $maxAttempts;
+    }
+
+    private function registerFailedAttempt(string $key): void
+    {
+        $attempts = (int) Cache::get($key, 0) + 1;
+        $minutes = config('security.login.lockout_minutes', 15);
+
+        Cache::put($key, $attempts, now()->addMinutes($minutes));
     }
 }

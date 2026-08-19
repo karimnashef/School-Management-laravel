@@ -25,6 +25,10 @@ class Teacher extends Model
         'price_per_shift',
     ];
 
+    protected $casts = [
+        'join_date' => 'date',
+    ];
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

@@ -1,0 +1,361 @@
+================================================================================
+ SCHOOL MANAGEMENT SYSTEM - BACKEND - PROJECT EXPLANATION (CURRENT PHASE)
+================================================================================
+
+================================================================================
+ 1. WHAT THE PROJECT IS
+================================================================================
+
+A School Management System backend API - a monolithic Laravel 13 application
+(PHP 8.5, MySQL 8, Laravel Sanctum) exposing a versioned REST API under
+/api/v1. It is being built phase by phase; what exists today is the
+foundation + core people/academic management layer + exams & final results.
+
+CURRENT STACK:
+- Laravel Framework 13.25
+- PHP 8.5
+- MySQL 8 (database: schooldb)
+- Laravel Sanctum 4.0 (token authentication)
+- UUID primary keys, soft deletes on all models
+
+================================================================================
+ 2. ARCHITECTURE (HOW THE CODE IS ORGANIZED)
+================================================================================
+
+Request
+  -> Middleware (auth:sanctum + active + throttle)
+  -> Controller (thin - HTTP glue only, authorize() via Policies)
+  -> FormRequest (input validation + role authorization)
+  -> Service (business logic: capacity, overlaps, transactions)
+  -> Model / Eloquent -> MySQL
+  -> API Resource -> JSON envelope {success, message, data}
+
+LAYERS:
+
+  Routes          routes/api.php             71 routes under /api/v1
+  Controllers     app/Http/Controllers       15 controllers (Auth, User,
+                                              Student, Teacher, SchoolClass,
+                                              Grade, GradeLevel, AcademicYear,
+                                              Attendance, Department,
+                                              TeacherShift, Exam, ExamResult,
+                                              FinalResult)
+  Policies        app/Policies               10 policies + Gate::before admin
+                                              bypass + custom final-result
+                                              abilities (all controllers call
+                                              authorize() on every method)
+  Form Requests   app/Http/Requests          30 request classes
+  Services        app/Services               14 services (AuthService,
+                                              UserService, StudentService,
+                                              TeacherService, SchoolClassService,
+                                              GradeService, GradeLevelService,
+                                              AcademicYearService,
+                                              AttendanceService,
+                                              DepartmentService,
+                                              TeacherShiftService,
+                                              ExamService, ExamResultService,
+                                              FinalResultService)
+  Models          app/Models                 13 models (User, Student, Teacher,
+                                              SchoolClass, Grade, GradeLevel,
+                                              AcademicYear, Attendance,
+                                              Department, TeacherShift, Exam,
+                                              ExamResult)
+  Enums           app/Enums                  8 enums (UserRoleEnum,
+                                              SchoolClassStatusEnum,
+                                              SchoolClassTypeEnum,
+                                              AttendanceStatusEnum,
+                                              TeacherShiftStatusEnum,
+                                              ExamTypeEnum, ExamStatusEnum,
+                                              ExamResultStatusEnum)
+  Resources       app/Http/Resources         13 API resources (JSON shaping,
+                                              nested relations via whenLoaded)
+  Infrastructure  app/Http/ApiResponse.php   Consistent response envelope
+                                              (paginated() wraps resources)
+                 app/Exceptions/DomainException.php   Business-rule exceptions
+                 bootstrap/app.php           Standardized JSON error rendering
+                                             (401/403/404/422)
+                 app/Http/Middleware/        EnsureUserIsActive + SecurityHeaders
+                 app/Providers/              AppServiceProvider (policies),
+                                             RateLimitServiceProvider
+                 config/security.php         Attempt limits, lockout, security
+                                             headers, CORS allowlist
+
+RESPONSE ENVELOPE (every endpoint):
+  Success:  { "success": true,  "message": "...", "data": {...} }
+  List:     { "success": true,  "message": "ok", "data": [...],
+              "meta": { current_page, per_page, total, last_page } }
+  Error:    { "success": false, "message": "...", "errors": {...} }
+
+================================================================================
+ 3. WHAT THE API CAN ACTUALLY DO TODAY
+================================================================================
+
+--------------------------------------------------------------------------------
+ 3.1 AUTHENTICATION  (/api/v1/auth)
+--------------------------------------------------------------------------------
+  POST /api/v1/auth/register   - create an account (student role by default)
+  POST /api/v1/auth/login      - returns Sanctum Bearer token + user profile
+  GET  /api/v1/auth/me         - current authenticated user (+ linked
+                                 student/teacher profile)
+  POST /api/v1/auth/logout     - revokes the token server-side
+
+  SECURITY:
+  - Passwords hashed via 'password' => 'hashed' cast - never stored plaintext
+  - Generic "Invalid credentials" response - no account enumeration
+  - Login blocked for non-active accounts (403)
+  - Progressive per-email lockout (config/security.php) + rate limiters:
+    login 5/min, register 3/min, api 120/min, bulk 10/min, sensitive 10/hour
+
+--------------------------------------------------------------------------------
+ 3.2 USERS  (/api/v1/users) - admin only
+--------------------------------------------------------------------------------
+  GET    /api/v1/users                     - list (paginated)
+  POST   /api/v1/users                     - create (password auto-hashed)
+  GET    /api/v1/users/{user}              - show
+  PUT/PATCH /api/v1/users/{user}           - update
+  DELETE /api/v1/users/{user}              - delete (soft)
+
+  Roles are an enum: student / teacher / admin
+  POLICY: admins cannot delete/update their own account.
+
+--------------------------------------------------------------------------------
+ 3.3 STUDENTS  (/api/v1/students) - admin CRUD
+--------------------------------------------------------------------------------
+  GET    /api/v1/students                  - list (paginated)
+  POST   /api/v1/students                  - create
+  GET    /api/v1/students/{student}        - show
+  PUT/PATCH /api/v1/students/{student}     - update
+  DELETE /api/v1/students/{student}        - delete (soft)
+  POST   /api/v1/students/{student}/restore - restore soft-deleted
+
+  Links: user account, class, grade level, academic year.
+  BUSINESS RULE: class capacity enforcement - assigning a student to a full
+  class is rejected (422 "Class is already full").
+  POLICY: students may only view their own record.
+
+--------------------------------------------------------------------------------
+ 3.4 SCHOOL CLASSES  (/api/v1/school-classes)
+--------------------------------------------------------------------------------
+  Full CRUD. Fields: grade_level_id, academic_year_id, name, description,
+  capacity, status (active/inactive/maintenance), type (male/female/mix).
+  Listings include student count.
+
+--------------------------------------------------------------------------------
+ 3.5 TEACHERS  (/api/v1/teachers)
+--------------------------------------------------------------------------------
+  Full CRUD. Links: user account, department. Fields: qualification,
+  join_date, required_shifts_per_week, price_per_shift.
+
+--------------------------------------------------------------------------------
+ 3.6 ACADEMIC STRUCTURE
+--------------------------------------------------------------------------------
+  GRADE LEVELS (/api/v1/grade-levels):
+    CRUD - e.g. name "Grade 1", level 1, stage "Primary"
+
+  ACADEMIC YEARS (/api/v1/academic-years):
+    CRUD + POST /api/v1/academic-years/{id}/set-current
+    BUSINESS RULE: exactly ONE current academic year (transaction).
+
+  DEPARTMENTS (/api/v1/departments):
+    CRUD with min/max grade bounds (min_grade <= max_grade validated)
+
+--------------------------------------------------------------------------------
+ 3.7 GRADES  (/api/v1/grades) - admin + teacher
+--------------------------------------------------------------------------------
+  CRUD. Record student grades per subject/academic year/grade level/department.
+  AUTO-COMPUTED: percentage = grade / department.max_grade * 100
+  (e.g. grade 85 / max 100 -> percentage 85)
+
+--------------------------------------------------------------------------------
+ 3.8 TEACHER SHIFTS  (/api/v1/teacher-shifts)
+--------------------------------------------------------------------------------
+  CRUD. Schedule a teacher for a class on a date/time; substitute support
+  (switch_to_id).
+  BUSINESS RULE: conflict detection - overlapping shifts for the same teacher
+  are rejected (e.g. 08:00-09:00 vs 08:30-09:30 -> 422).
+
+--------------------------------------------------------------------------------
+ 3.9 ATTENDANCE  (/api/v1/attendances)
+--------------------------------------------------------------------------------
+  POST /api/v1/attendances            - single record
+  POST /api/v1/attendances/bulk       - bulk (one transaction)
+  GET/PUT/PATCH/DELETE                - show/update/delete
+
+  Statuses: present / absent / late / excused
+  BUSINESS RULE: duplicate protection - same student + shift + date rejected.
+
+--------------------------------------------------------------------------------
+ 3.10 EXAMS  (/api/v1/exams) - admin + teacher
+--------------------------------------------------------------------------------
+  Full CRUD + POST /api/v1/exams/{exam}/publish (throttle:sensitive).
+  Fields: exam_type (quiz/midterm/final), name, subject, class_id (nullable -
+  null means the whole grade level), grade_level_id, academic_year_id,
+  department_id (nullable), exam_date, max_grade, status (draft/published).
+  BUSINESS RULE: only PUBLISHED exams count toward final results.
+
+--------------------------------------------------------------------------------
+ 3.11 EXAM RESULTS  (/api/v1/exam-results) - admin + teacher
+--------------------------------------------------------------------------------
+  POST /api/v1/exam-results            - single record
+  POST /api/v1/exam-results/bulk       - bulk for one exam (throttle:bulk)
+  GET/PUT/PATCH/DELETE                - show/update/delete (list filterable by
+                                        exam_id and student_id)
+
+  AUTO-COMPUTED: status = passed when score >= 50% of exam.max_grade, else
+  failed. percentage = score / exam.max_grade * 100.
+  BUSINESS RULE: duplicate protection - one result per (exam, student).
+
+--------------------------------------------------------------------------------
+ 3.12 FINAL RESULTS  (/api/v1/final-results) - the per-student final result
+--------------------------------------------------------------------------------
+  GET /api/v1/final-results            - every student's final result (filter by
+                                         class_id, academic_year_id, per_page)
+  GET /api/v1/final-results/{student}  - one student's final result (?academic_year_id
+                                         defaults to the student's year)
+
+  COMPUTATION RULES:
+  - Only PUBLISHED exams for the student's grade level and academic year
+    count; class-wide exams (class_id null) apply to everyone, class-specific
+    exams apply only to that class.
+  - Per subject: percentage = sum(scores) / sum(max_grade) * 100
+  - Overall: mean of the subject percentages.
+  - Pass mark: 50. Grade letter: A >= 90, B >= 80, C >= 70, D >= 50, F < 50.
+  - Response includes per-subject summary + full exam-by-exam breakdown.
+  POLICY: students see only their own; teachers/admins see all.
+
+--------------------------------------------------------------------------------
+ 3.13 AUTHORIZATION (POLICIES)
+--------------------------------------------------------------------------------
+  - 10 policy classes + Gate::before (admin = superuser).
+  - Teachers: manage grades, attendance, exam results, teacher shifts;
+    view students/classes/exams.
+  - Students: view own student record, own grades, own attendance, own
+    exam results, own final result, published exams of their class.
+  - Admin: everything (except self-delete).
+
+--------------------------------------------------------------------------------
+ 3.14 SEEDERS (demo data, php artisan migrate:fresh --seed)
+--------------------------------------------------------------------------------
+  GradeLevelSeeder, AcademicYearSeeder, DepartmentSeeder, AdminSeeder,
+  SchoolClassSeeder, TeacherSeeder, StudentSeeder, TeacherShiftSeeder,
+  AttendanceSeeder, GradeSeeder, ExamSeeder, ExamResultSeeder
+  -> 1 admin, 3 teachers, 9 students, 3 classes, 15 teacher shifts,
+     45 attendances, 36 grades, 27 exams (9 per grade level), 81 exam results
+
+--------------------------------------------------------------------------------
+ 3.15 CROSS-CUTTING (EVERYWHERE)
+--------------------------------------------------------------------------------
+  - 71 routes, all authenticated except login/register
+  - Consistent response envelope + standardized errors (401/403/404/422)
+  - Pagination on all index endpoints (?per_page=, meta block with totals)
+  - Nested relations in responses (student -> user/class/grade level/...)
+  - Form Request validation everywhere (types, formats, enums, existence,
+    uniqueness, cross-field rules like end_date after start_date)
+  - Security headers middleware, CORS allowlist, rate limiting on all routes
+
+================================================================================
+ 4. DATABASE SCHEMA (15 TABLES, ALL MIGRATIONS GREEN)
+================================================================================
+
+  users                  - auth data (first/last name, email, phone,
+                            password, role, status, address)
+  personal_access_tokens - Sanctum tokens (uuidMorphs - UUID compatible)
+  grade_levels           - e.g. Grade 1 / level / stage
+  academic_years         - name, start/end dates, is_current
+  departments            - name, min/max grade bounds
+  school_classes         - grade_level, academic_year, name, capacity,
+                            status enum, type enum
+  teachers               - user, department, qualification, join_date,
+                            shifts/week, price per shift
+  students               - user, class, grade_level, academic_year,
+                            admission_date, age, blood_group
+  teacher_shifts         - teacher, class, switch_to, date, start/end time,
+                            status enum (scheduled/completed/absent/cancelled)
+  grades                 - student, academic_year, grade_level, department,
+                            name, grade, result, description
+  attendances            - student, shift, attendance_date, status enum, notes
+  exams                  - exam_type enum, name, subject, class (nullable),
+                            grade_level, academic_year, department (nullable),
+                            exam_date, max_grade, status enum
+  exam_results           - exam, student, score, status enum (passed/failed),
+                            remarks, UNIQUE (exam_id, student_id)
+  cache / jobs           - framework tables
+
+  DESIGN NOTES:
+  - UUID primary keys + soft deletes on all business tables
+  - Foreign keys with proper on-delete behavior (cascade for owned data,
+    restrict for reference data)
+  - DB-level enums matching PHP enums (integrity)
+  - Composite indexes on hot query paths (student+date, teacher+date, ...)
+
+================================================================================
+ 5. WHAT IS NOT BUILT YET (NEXT PHASES)
+================================================================================
+
+  Area                              Status
+  --------------------------------- ----------------------------------------
+  RBAC (permissions/policies)       DONE - policies + admin bypass
+  Exams / Results / Final result    DONE
+  Seeders with demo data            DONE
+  Password reset / email verify     PARTIAL - requests exist, no endpoints yet
+  Redis, Queues, Jobs, Scheduler    NOT yet (cache=file/database locally)
+  Notifications + Supabase          NOT yet
+  Student classification engine     NOT yet
+  Schedule generation engine        NOT yet
+  Fees, Payments, Library,          NOT yet
+  Transportation, HR
+  Announcements, Events,            NOT yet
+  Assignments
+  Reports, Audit logs,              NOT yet
+  Import/Export
+  Tests                             NOT yet (2 example tests)
+
+================================================================================
+ 6. HOW TO RUN IT
+================================================================================
+
+  # .env currently points at MySQL "schooldb"
+  php artisan migrate:fresh --seed   # rebuild schema + demo data (15 tables)
+  php artisan serve                  # http://localhost:8000
+
+  # Login flow:
+  curl -X POST http://localhost:8000/api/v1/auth/login \
+    -H "Content-Type: application/json" \
+    -d '{"email":"admin@school.test","password":"password"}'
+  # -> { "token": "1|...", "user": {...} }
+
+  # Then send the token on every request:
+  #   Authorization: Bearer <token>
+
+  # Seeded demo accounts (all password "password"):
+  #   admin@school.test              (admin)
+  #   ahmed.hassan@school.test       (teacher, Mathematics)
+  #   mona.ibrahim@school.test       (teacher, Science)
+  #   sara.khaled@school.test        (teacher, Languages)
+  #   omar.mostafa@school.test       (student, Grade 1 - A)
+  #   laila.adel@school.test         (student, Grade 1 - A)
+  #   youssef.tarek@school.test      (student, Grade 1 - A)
+  #   mariam.samir@school.test       (student, Grade 2 - A)
+  #   karim.fawzy@school.test        (student, Grade 2 - A)
+  #   nour.hany@school.test          (student, Grade 2 - A)
+  #   adam.sherif@school.test        (student, Grade 3 - A)
+  #   salma.magdy@school.test        (student, Grade 3 - A)
+  #   ali.ezzat@school.test          (student, Grade 3 - A)
+
+  # Final result example:
+  curl http://localhost:8000/api/v1/final-results/{student-id} \
+    -H "Authorization: Bearer <token>"
+  # -> { overall_percentage, pass_mark, passed, grade_letter,
+  #      subjects: [...], exams: [...] }
+
+================================================================================
+ 7. SUMMARY IN ONE SENTENCE
+================================================================================
+
+This phase delivers a secure, validated, paginated, policy-protected CRUD API
+for users, students, teachers, classes, grades, departments, academic years,
+teacher shifts, attendance, exams and exam results - with real business
+rules (class capacity, shift conflicts, duplicate protection, single current
+year, auto percentages, pass/fail) - plus a computed FINAL RESULT for every
+student, ready to be extended with finance, scheduling, notifications and
+reporting domains next.
+================================================================================
